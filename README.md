@@ -1,7 +1,8 @@
 # Delphi WtsApi
 Header and wrapper for using the Windows Terminal Services API (in short WtsApi)
+See: https://docs.microsoft.com/en-us/windows/win32/api/wtsapi32/
 
-Library setup is base on the C# library 'Cassia' https://github.com/danports/cassia
+The class library is based on the C# library 'Cassia' https://github.com/danports/cassia
 
 Currently the project consists of
 - a library for accessing the WtsApi:
