@@ -14,8 +14,19 @@ type
   IWtsSession = interface;
   IWtsSessions = interface;
 
-  IWtsServerHandle = interface
-    ['{1C1B2EC7-F9F6-4525-9410-634D971A44C6}']
+  /// <summary>
+  ///  Wraps the native terminal server handle and is automatically shared
+  ///  with the other classes, when using this library. It therefore
+  ///  serves as a single point where the actual connnection with the server
+  ///  (the handle) can be managed!
+  /// </summary>
+  /// <remarks>
+  ///  You need use this interface only when you want to directly access the
+  ///  Windows terminal server handle to perform an operation that library
+  ///  does not currently support.
+  /// </remarks>
+  IWtsServerConnection = interface
+  ['{1C1B2EC7-F9F6-4525-9410-634D971A44C6}']
     function GetHandle: TWtsHandle;
     function GetIsLocal: Boolean;
     function GetIsOpen: Boolean;
@@ -58,14 +69,13 @@ type
 
   IWtsObject = interface
     ['{1EE8457E-AE06-4F34-BA0E-63DE259A7D24}']
-    function GetServerHandle: IWtsServerHandle;
+    function GetConnection: IWtsServerConnection;
 
     /// <summary>
-    /// The underlying terminal server handle object.
+    /// The termina server connection used.
     /// </summary>
-    property ServerHandle: IWtsServerHandle read GetServerHandle;
+    property Connection: IWtsServerConnection read GetConnection;
   end;
-
 
   IWtsServer = interface(IWtsObject)
     ['{94F4540E-06A7-49B2-8EC6-7398280DBC63}']
@@ -509,7 +519,7 @@ uses
   System.Classes, Winapi.Windows;
 
 type
-  TWtsServerHandle = class(TInterfacedObject, IWtsServerHandle)
+  TWtsServerHandle = class(TInterfacedObject, IWtsServerConnection)
   private
   const
     HandleNotOpen = 0;
@@ -530,13 +540,13 @@ type
 
   TWtsObject = class(TInterfacedObject)
   strict private
-    FServerHandle: IWtsServerHandle;
+    FConnection: IWtsServerConnection;
   strict protected
-    function GetServerHandle: IWtsServerHandle;
+    function GetConnection: IWtsServerConnection;
   protected
-    property ServerHandle: IWtsServerHandle read GetServerHandle;
+    property Connection: IWtsServerConnection read GetConnection;
   public
-    constructor Create(aServerHandle: IWtsServerHandle);
+    constructor Create(aConnection: IWtsServerConnection);
   end;
 
   TWtsServer = class(TWtsObject, IWtsServer)
@@ -574,8 +584,8 @@ type
     function GetDomainName: string;
     procedure Refresh(Flags: TWtsInfos);
   public
-    constructor Create(aServerHandle: IWtsServerHandle; aSessionId: TWtsSessionId); overload;
-    constructor Create(aServerHandle: IWtsServerHandle; const aInfo: TWtsSessionInfo); overload;
+    constructor Create(aConnection: IWtsServerConnection; aSessionId: TWtsSessionId); overload;
+    constructor Create(aConnection: IWtsServerConnection; const aInfo: TWtsSessionInfo); overload;
   end;
 
 // Public functiones
@@ -642,27 +652,27 @@ end;
 
 { TWtsObject }
 
-constructor TWtsObject.Create(aServerHandle: IWtsServerHandle);
+constructor TWtsObject.Create(aConnection: IWtsServerConnection);
 begin
   inherited Create;
-  FServerHandle := aServerHandle;
+  FConnection := aConnection;
 end;
 
-function TWtsObject.GetServerHandle: IWtsServerHandle;
+function TWtsObject.GetConnection: IWtsServerConnection;
 begin
-  Result := FServerHandle;
+  Result := FConnection;
 end;
 
 { TWtsServer }
 
 function TWtsServer.GetSession(SessionId: TWtsSessionId): IWtsSession;
 begin
-  Result := TWtsSession.Create(ServerHandle, SessionId);
+  Result := TWtsSession.Create(Connection, SessionId);
 end;
 
 function TWtsServer.GetSessions: IWtsSessions;
 begin
-  Result := TWtsSessions.Create(ServerHandle);
+  Result := TWtsSessions.Create(Connection);
 end;
 
 { TWtsSessions }
@@ -680,14 +690,14 @@ var
 begin
   FList := TInterfaceList.Create;
 
-  ServerHandle.Open;
-  if WTSEnumerateSessions(ServerHandle.Handle, 0, 1, @pSI, @iCount) then
+  Connection.Open;
+  if WTSEnumerateSessions(Connection.Handle, 0, 1, @pSI, @iCount) then
   try
     pCurSI := pSI;
     while iCount > 0 do
     begin
       Dec(iCount);
-      FList.Add( TWtsSession.Create(ServerHandle, pCurSI^) as IWtsSession );
+      FList.Add( TWtsSession.Create(Connection, pCurSI^) as IWtsSession );
       Inc(pCurSI);
     end;
   finally
@@ -718,17 +728,17 @@ end;
 
 { TWtsSession }
 
-constructor TWtsSession.Create(aServerHandle: IWtsServerHandle; aSessionId:
+constructor TWtsSession.Create(aConnection: IWtsServerConnection; aSessionId:
     TWtsSessionId);
 begin
-  inherited Create(aServerHandle);
+  inherited Create(aConnection);
   FSessionId := aSessionId;
 end;
 
-constructor TWtsSession.Create(aServerHandle: IWtsServerHandle; const aInfo:
+constructor TWtsSession.Create(aConnection: IWtsServerConnection; const aInfo:
     TWtsSessionInfo);
 begin
-  Create(aServerHandle, aInfo.SessionId);
+  Create(aConnection, aInfo.SessionId);
   FWtsInfo.State := aInfo.State;
   StrPLCopy(FWtsInfo.WinStationName, aInfo.pWinStationName, WINSTATIONNAME_LENGTH);
   F_InfoSetOnCreate := True;
@@ -824,7 +834,7 @@ var
   pSI: PWTSINFO;
   iByteCount: DWORD;
 begin
-  if WTSQuerySessionInformation(ServerHandle.Handle, FSessionId, WTSSessionInfo, @pSI, @iByteCount) then
+  if WTSQuerySessionInformation(Connection.Handle, FSessionId, WTSSessionInfo, @pSI, @iByteCount) then
   try
     FWtsInfo := pSI^;
   finally
