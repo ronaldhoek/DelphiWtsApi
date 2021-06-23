@@ -44,7 +44,6 @@ end;
 
 procedure TfrmMain.btnGetSessionsClick(Sender: TObject);
 var
-  FServer: IWtsServer;
   sessions: IWtsSessions;
   I: Integer;
   item: TListItem;
@@ -58,7 +57,8 @@ begin
     item := lvSessions.Items.Add;
     item.Caption := IntToStr(sessions[I].SessionId);
     item.SubItems.Add(sessions[i].WindowStationName);
-    item.SubItems.Add(GetStateString(sessions[I].ConnectionState))
+    item.SubItems.Add(GetStateString(sessions[I].ConnectionState));
+    sessions[i].ConnectionState
   end;
 end;
 
@@ -87,6 +87,8 @@ begin
     lbSessionInfo.Items.Add('SessionId: ' + IntToStr(session.SessionId));
     lbSessionInfo.Items.Add('State: ' + GetStateString(session.ConnectionState));
     lbSessionInfo.Items.Add('Winstation: ' + session.WindowStationName);
+    if (session.UserName > '') then
+      lbSessionInfo.Items.Add('User: ' + session.DomainName + '\' + session.UserName);
 
     // etc.
   end;

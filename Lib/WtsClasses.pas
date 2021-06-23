@@ -119,6 +119,8 @@ type
     function GetSessionId: TWtsSessionId;
     function GetConnectionState: TWtsConnectstate;
     function GetWindowStationName: string;
+    function GetUsername: string;
+    function GetDomainName: string;
 
     /// <summary>
     ///     The ID of the session.
@@ -139,6 +141,16 @@ type
     ///     Refreshes session information
     /// </summary>
     procedure Refresh(Flags: TWtsInfos);
+
+    /// <summary>
+    ///     The name of the user account that last connected to the session.
+    /// </summary>
+    property UserName: string read GetUsername;
+
+    /// <summary>
+    ///     The domain of the user account that last connected to the session.
+    /// </summary>
+    property DomainName: string read GetDomainName;
 
 (*
     /// <summary>
@@ -201,16 +213,6 @@ type
     ///     <para>This will return <c>TimeSpan.Zero</c> if the idle time could not be determined.</para>
     /// </remarks>
     TimeSpan IdleTime { get; }
-
-    /// <summary>
-    ///     The name of the user account that last connected to the session.
-    /// </summary>
-    string UserName { get; }
-
-    /// <summary>
-    ///     The domain of the user account that last connected to the session.
-    /// </summary>
-    string DomainName { get; }
 
     /// <summary>
     ///     The user account that last connected to the session.
@@ -568,6 +570,8 @@ type
     function GetConnectionState: TWtsConnectstate;
     function GetSessionId: TWtsSessionId;
     function GetWindowStationName: string;
+    function GetUsername: string;
+    function GetDomainName: string;
     procedure Refresh(Flags: TWtsInfos);
   public
     constructor Create(aServerHandle: IWtsServerHandle; aSessionId: TWtsSessionId); overload;
@@ -743,9 +747,21 @@ begin
   Result := FWtsInfo.State;
 end;
 
+function TWtsSession.GetDomainName: string;
+begin
+  EnsureInfo(WTSSessionInfo);
+  Result := FWtsInfo.Domain;
+end;
+
 function TWtsSession.GetSessionId: TWtsSessionId;
 begin
   Result := FSessionId;
+end;
+
+function TWtsSession.GetUsername: string;
+begin
+  EnsureInfo(WTSSessionInfo);
+  Result := FWtsInfo.UserName;
 end;
 
 function TWtsSession.GetWindowStationName: string;
