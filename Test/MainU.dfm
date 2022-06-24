@@ -11,6 +11,7 @@ object frmMain: TfrmMain
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnCloseQuery = FormCloseQuery
   DesignSize = (
     275
     339)
@@ -23,7 +24,7 @@ object frmMain: TfrmMain
     Height = 13
     Caption = 'Server name'
   end
-  object Sessions: TLabel
+  object lblSessions: TLabel
     Left = 8
     Top = 51
     Width = 41
@@ -72,7 +73,6 @@ object frmMain: TfrmMain
     TabOrder = 2
     ViewStyle = vsReport
     OnChange = lvSessionsChange
-    ExplicitHeight = 110
   end
   object lbSessionInfo: TListBox
     Left = 8
@@ -82,6 +82,10 @@ object frmMain: TfrmMain
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 13
     TabOrder = 3
-    ExplicitTop = 183
+  end
+  object tmrRefresh: TTimer
+    OnTimer = tmrRefreshTimer
+    Left = 120
+    Top = 152
   end
 end

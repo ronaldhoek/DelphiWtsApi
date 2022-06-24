@@ -716,14 +716,14 @@ begin
   Result := False;
 end;
 
+{ TWtsSession }
+
 constructor TWtsSession.Create(aServerHandle: IWtsServerHandle; aSessionId:
     TWtsSessionId);
 begin
   inherited Create(aServerHandle);
   FSessionId := aSessionId;
 end;
-
-{ TWtsSession }
 
 constructor TWtsSession.Create(aServerHandle: IWtsServerHandle; const aInfo:
     TWtsSessionInfo);
