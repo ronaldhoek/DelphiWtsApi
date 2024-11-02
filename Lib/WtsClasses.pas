@@ -557,8 +557,7 @@ type
     function GetConnection: IWtsServerConnection;
     function GetLastError: Cardinal;
   protected
-    procedure ClearLastError;
-    procedure SaveLastError;
+    function CheckResult(aResult: Boolean): Boolean;
     property Connection: IWtsServerConnection read GetConnection;
   public
     constructor Create(aConnection: IWtsServerConnection);
@@ -681,9 +680,13 @@ begin
   FConnection := aConnection;
 end;
 
-procedure TWtsObject.ClearLastError;
+function TWtsObject.CheckResult(aResult: Boolean): Boolean;
 begin
-  FLastError := 0;
+  Result := aResult;
+  if Result then
+    FLastError := 0
+  else
+    FLastError := WinApi.Windows.GetLastError;
 end;
 
 function TWtsObject.GetConnection: IWtsServerConnection;
@@ -694,11 +697,6 @@ end;
 function TWtsObject.GetLastError: Cardinal;
 begin
   Result := FLastError;
-end;
-
-procedure TWtsObject.SaveLastError;
-begin
-  FLastError := WinApi.Windows.GetLastError;
 end;
 
 { TWtsServer }
@@ -718,6 +716,7 @@ end;
 procedure TWtsSessions.AfterConstruction;
 begin
   inherited;
+  FList := TInterfaceList.Create;
   DoList;
 end;
 
@@ -726,11 +725,8 @@ var
   pSI, pCurSI: PWTS_SESSION_INFO;
   iCount: DWORD;
 begin
-  FList := TInterfaceList.Create;
-
-  ClearLastError;
   Connection.Open;
-  if WTSEnumerateSessions(Connection.Handle, 0, 1, @pSI, @iCount) then
+  if CheckResult(WTSEnumerateSessions(Connection.Handle, 0, 1, @pSI, @iCount)) then
   try
     pCurSI := pSI;
     while iCount > 0 do
@@ -741,8 +737,7 @@ begin
     end;
   finally
     WTSFreeMemory(pSI);
-  end else
-    SaveLastError;
+  end;
 end;
 
 function TWtsSessions.GetCount: Integer;

@@ -66,12 +66,13 @@ end;
 procedure TfrmMain.edtServerNameChange(Sender: TObject);
 begin
   lvSessions.Items.Clear;
+  lbSessionInfo.Clear;
   FCurServer := nil;
 
   tmrRefresh.Enabled := False;
   if Trim((Sender as TEdit).Text) > '' then
   begin
-    tmrRefresh.Interval := 250;
+    tmrRefresh.Interval := 500;
     tmrRefresh.Enabled := True;
   end else
     stsMain.SimpleText := '<refresh not active>';

@@ -40,16 +40,15 @@ object frmMain: TfrmMain
     Height = 21
     Anchors = [akTop, akRight]
     Caption = 'Get sessions'
-    TabOrder = 0
+    TabOrder = 1
     OnClick = btnGetSessionsClick
-    ExplicitLeft = 214
   end
   object edtServerName: TEdit
     Left = 8
     Top = 24
     Width = 121
     Height = 21
-    TabOrder = 1
+    TabOrder = 0
     OnChange = edtServerNameChange
   end
   object lvSessions: TListView
@@ -77,8 +76,6 @@ object frmMain: TfrmMain
     TabOrder = 2
     ViewStyle = vsReport
     OnChange = lvSessionsChange
-    ExplicitWidth = 259
-    ExplicitHeight = 389
   end
   object lbSessionInfo: TListBox
     Left = 8
@@ -88,8 +85,6 @@ object frmMain: TfrmMain
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 13
     TabOrder = 3
-    ExplicitTop = 212
-    ExplicitWidth = 259
   end
   object stsMain: TStatusBar
     Left = 0
@@ -99,9 +94,6 @@ object frmMain: TfrmMain
     Panels = <>
     SimplePanel = True
     SimpleText = '<refresh not active>'
-    ExplicitLeft = 144
-    ExplicitTop = 184
-    ExplicitWidth = 0
   end
   object tmrRefresh: TTimer
     Enabled = False
