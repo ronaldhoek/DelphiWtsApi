@@ -16,6 +16,7 @@ type
     lbSessionInfo: TListBox;
     lvSessions: TListView;
     tmrRefresh: TTimer;
+    stsMain: TStatusBar;
     procedure btnGetSessionsClick(Sender: TObject);
     procedure edtServerNameChange(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -66,6 +67,14 @@ procedure TfrmMain.edtServerNameChange(Sender: TObject);
 begin
   lvSessions.Items.Clear;
   FCurServer := nil;
+
+  tmrRefresh.Enabled := False;
+  if Trim((Sender as TEdit).Text) > '' then
+  begin
+    tmrRefresh.Interval := 250;
+    tmrRefresh.Enabled := True;
+  end else
+    stsMain.SimpleText := '<refresh not active>';
 end;
 
 procedure TfrmMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -102,8 +111,6 @@ begin
   if FRefreshTask <> nil then
     Exit;
 
-  lvSessions.Items.Clear;
-
   FRefreshTask := TThread.CreateAnonymousThread(
     procedure
     var
@@ -111,13 +118,16 @@ begin
     begin
       try
         sessions := CurServer.GetSessions;
+        if sessions.LastError > 0 then
+          raise Exception.Create(SysErrorMessage(sessions.LastError));
+
       except
         on E: Exception do
         begin
           TThread.Synchronize(nil,
             procedure
             begin
-              Application.ShowException(E);
+              stsMain.SimpleText := 'Refresh failed: ' + E.Message;
             end);
           FRefreshTask := nil;
           if FWantToClose then Close;
@@ -143,22 +153,40 @@ end;
 procedure TfrmMain.tmrRefreshTimer(Sender: TObject);
 begin
   if edtServerName.Text > '' then
+  begin
+    stsMain.SimpleText := 'Refreshing...';
     RefreshSessionList;
+    (Sender as TTimer).Interval := 5000;
+  end;
 end;
 
 procedure TfrmMain.UpdateSessionList(sessions: IWtsSessions);
 var
   I: Integer;
+  sCaption: string;
   item: TListItem;
 begin
+  stsMain.SimpleText := 'Last refresh: ' + TimeToStr(Now);
+
   for I := 0 to sessions.Count - 1 do
   begin
-    item := lvSessions.Items.Add;
-    item.Caption := IntToStr(sessions[I].SessionId);
+    sCaption := IntToStr(sessions[I].SessionId);
+    item := lvSessions.FindCaption(0, sCaption, False, True, False);
+    if item = nil then
+    begin
+      item := lvSessions.Items.Add;
+      item.Caption := sCaption;
+    end;
+    item.Data := Pointer(sessions); // Non-ref counting ref to session list
     item.SubItems.Add(sessions[i].WindowStationName);
     item.SubItems.Add(GetStateString(sessions[I].ConnectionState));
-    sessions[i].ConnectionState
   end;
+
+  // cleanup non valid sessions
+  if lvSessions.Items.Count > sessions.Count then
+    for I := lvSessions.Items.Count - 1 downto 0 do
+      if lvSessions.Items[I].Data <> Pointer(sessions) then
+        lvSessions.Items.Delete(I);
 end;
 
 end.

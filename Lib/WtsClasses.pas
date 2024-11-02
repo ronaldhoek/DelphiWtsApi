@@ -70,11 +70,18 @@ type
   IWtsObject = interface
     ['{1EE8457E-AE06-4F34-BA0E-63DE259A7D24}']
     function GetConnection: IWtsServerConnection;
+    function GetLastError: Cardinal;
 
     /// <summary>
-    /// The termina server connection used.
+    /// The terminal server connection used.
     /// </summary>
     property Connection: IWtsServerConnection read GetConnection;
+
+    /// <summary>
+    /// The last saved error after performing some action within the object
+    /// referenced by the 'IWtsObject' interface.
+    /// </summary>
+    property LastError: Cardinal read GetLastError;
   end;
 
   IWtsServer = interface(IWtsObject)
@@ -518,13 +525,16 @@ implementation
 uses
   System.Classes, Winapi.Windows;
 
+const
+  sServerNameLocal = 'localhost';
+
 type
-  TWtsServerHandle = class(TInterfacedObject, IWtsServerConnection)
+  TWtsServerConnection = class(TInterfacedObject, IWtsServerConnection)
   private
   const
-    HandleNotOpen = 0;
+    RemoteHandleNotOpen = 0;
   var
-    FHandle: TWtsHandle;
+    FRemoteHandle: TWtsHandle;
     FServerName: string;
   protected
     procedure Close;
@@ -538,12 +548,17 @@ type
     destructor Destroy; override;
   end;
 
-  TWtsObject = class(TInterfacedObject)
+  TWtsObject = class(TInterfacedObject, IWtsObject)
   strict private
     FConnection: IWtsServerConnection;
+  private
+    FLastError: DWORD;
   strict protected
     function GetConnection: IWtsServerConnection;
+    function GetLastError: Cardinal;
   protected
+    procedure ClearLastError;
+    procedure SaveLastError;
     property Connection: IWtsServerConnection read GetConnection;
   public
     constructor Create(aConnection: IWtsServerConnection);
@@ -592,62 +607,70 @@ type
 
 function OpenServer(const ServerName: string): IWtsServer;
 begin
-  Result := TWtsServer.Create(TWtsServerHandle.Create(ServerName));
+  Result := TWtsServer.Create(TWtsServerConnection.Create(ServerName));
 end;
 
-{ TWtsServerHandle }
+{ TWtsServerConnection }
 
-procedure TWtsServerHandle.Close;
+procedure TWtsServerConnection.Close;
 begin
-  if FHandle <> HandleNotOpen then
+  if FRemoteHandle <> RemoteHandleNotOpen then
   begin
-    WTSCloseServer(FHandle);
-    FHandle := HandleNotOpen;
+    WTSCloseServer(FRemoteHandle);
+    FRemoteHandle := RemoteHandleNotOpen;
   end;
 end;
 
-constructor TWtsServerHandle.Create(const aServerName: string);
+constructor TWtsServerConnection.Create(const aServerName: string);
 begin
   if not WTSApiLibLoaded then
     raise Exception.Create('Wts library cannot be loaded');
 
   inherited Create;
-  FServerName := aServerName;
+
+  // Check 'localhost' and set to empty string, to simplify localhost checks.
+  if SameText(aServerName, sServerNameLocal) then
+    FServerName := ''
+  else
+    FServerName := aServerName;
 end;
 
-destructor TWtsServerHandle.Destroy;
+destructor TWtsServerConnection.Destroy;
 begin
   Close;
   inherited;
 end;
 
-function TWtsServerHandle.GetHandle: TWtsHandle;
+function TWtsServerConnection.GetHandle: TWtsHandle;
 begin
-  Result := FHandle;
+  if GetIsLocal then
+    Result := WTS_CURRENT_SERVER_HANDLE
+  else
+    Result := FRemoteHandle;
 end;
 
-function TWtsServerHandle.GetIsLocal: Boolean;
+function TWtsServerConnection.GetIsLocal: Boolean;
 begin
   Result := Length(FServerName) = 0;
 end;
 
-function TWtsServerHandle.GetIsOpen: Boolean;
+function TWtsServerConnection.GetIsOpen: Boolean;
 begin
-  Result := GetIsLocal or (FHandle <> HandleNotOpen);
+  Result := GetIsLocal or (FRemoteHandle <> RemoteHandleNotOpen);
 end;
 
-function TWtsServerHandle.GetServerName: string;
+function TWtsServerConnection.GetServerName: string;
 begin
   if GetIsLocal then
-    Result := 'localhost'
+    Result := sServerNameLocal
   else
     Result := FServerName;
 end;
 
-procedure TWtsServerHandle.Open;
+procedure TWtsServerConnection.Open;
 begin
   if not GetIsOpen then
-    FHandle := WTSOpenServer(PChar(FServerName));
+    FRemoteHandle := WTSOpenServer(PChar(FServerName));
 end;
 
 { TWtsObject }
@@ -658,9 +681,24 @@ begin
   FConnection := aConnection;
 end;
 
+procedure TWtsObject.ClearLastError;
+begin
+  FLastError := 0;
+end;
+
 function TWtsObject.GetConnection: IWtsServerConnection;
 begin
   Result := FConnection;
+end;
+
+function TWtsObject.GetLastError: Cardinal;
+begin
+  Result := FLastError;
+end;
+
+procedure TWtsObject.SaveLastError;
+begin
+  FLastError := WinApi.Windows.GetLastError;
 end;
 
 { TWtsServer }
@@ -690,6 +728,7 @@ var
 begin
   FList := TInterfaceList.Create;
 
+  ClearLastError;
   Connection.Open;
   if WTSEnumerateSessions(Connection.Handle, 0, 1, @pSI, @iCount) then
   try
@@ -702,7 +741,8 @@ begin
     end;
   finally
     WTSFreeMemory(pSI);
-  end;
+  end else
+    SaveLastError;
 end;
 
 function TWtsSessions.GetCount: Integer;

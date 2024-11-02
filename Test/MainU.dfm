@@ -2,9 +2,11 @@ object frmMain: TfrmMain
   Left = 0
   Top = 0
   Caption = 'WtsApi test'
-  ClientHeight = 339
-  ClientWidth = 275
+  ClientHeight = 311
+  ClientWidth = 234
   Color = clBtnFace
+  Constraints.MinHeight = 350
+  Constraints.MinWidth = 250
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -13,8 +15,8 @@ object frmMain: TfrmMain
   OldCreateOrder = False
   OnCloseQuery = FormCloseQuery
   DesignSize = (
-    275
-    339)
+    234
+    311)
   PixelsPerInch = 96
   TextHeight = 13
   object lblServername: TLabel
@@ -32,13 +34,15 @@ object frmMain: TfrmMain
     Caption = 'Sessions'
   end
   object btnGetSessions: TButton
-    Left = 192
+    Left = 151
     Top = 24
     Width = 75
     Height = 21
+    Anchors = [akTop, akRight]
     Caption = 'Get sessions'
     TabOrder = 0
     OnClick = btnGetSessionsClick
+    ExplicitLeft = 214
   end
   object edtServerName: TEdit
     Left = 8
@@ -51,8 +55,8 @@ object frmMain: TfrmMain
   object lvSessions: TListView
     Left = 8
     Top = 67
-    Width = 259
-    Height = 150
+    Width = 218
+    Height = 105
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
@@ -73,17 +77,34 @@ object frmMain: TfrmMain
     TabOrder = 2
     ViewStyle = vsReport
     OnChange = lvSessionsChange
+    ExplicitWidth = 259
+    ExplicitHeight = 389
   end
   object lbSessionInfo: TListBox
     Left = 8
-    Top = 223
-    Width = 259
+    Top = 178
+    Width = 218
     Height = 108
     Anchors = [akLeft, akRight, akBottom]
     ItemHeight = 13
     TabOrder = 3
+    ExplicitTop = 212
+    ExplicitWidth = 259
+  end
+  object stsMain: TStatusBar
+    Left = 0
+    Top = 292
+    Width = 234
+    Height = 19
+    Panels = <>
+    SimplePanel = True
+    SimpleText = '<refresh not active>'
+    ExplicitLeft = 144
+    ExplicitTop = 184
+    ExplicitWidth = 0
   end
   object tmrRefresh: TTimer
+    Enabled = False
     OnTimer = tmrRefreshTimer
     Left = 120
     Top = 152

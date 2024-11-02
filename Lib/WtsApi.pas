@@ -10,7 +10,7 @@ uses
 const
   rdpapidll = 'Wtsapi32.dll';
 
-  // Hanlde to use when quering local server
+  // Handle to use when quering local server
   WTS_CURRENT_SERVER_HANDLE  = 0;
 
   // From 'winsta.h'
