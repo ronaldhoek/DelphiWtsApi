@@ -116,6 +116,7 @@ begin
     procedure
     var
       sessions: IWtsSessions;
+      msg: string;
     begin
       try
         sessions := CurServer.GetSessions;
@@ -125,13 +126,17 @@ begin
       except
         on E: Exception do
         begin
+          FRefreshTask := nil;
+          msg := E.Message;
           TThread.Synchronize(nil,
             procedure
             begin
-              stsMain.SimpleText := 'Refresh failed: ' + E.Message;
+              tmrRefresh.Enabled := False;
+              if FWantToClose then
+                Close
+              else
+                stsMain.SimpleText := 'Refresh failed: ' + msg;
             end);
-          FRefreshTask := nil;
-          if FWantToClose then Close;
           Exit;
         end;
       end;
