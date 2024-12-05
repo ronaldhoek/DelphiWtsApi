@@ -182,8 +182,10 @@ begin
     begin
       item := lvSessions.Items.Add;
       item.Caption := sCaption;
-    end;
-    item.Data := Pointer(sessions); // Non-ref counting ref to session list
+    end else
+      item.SubItems.Clear;
+
+    item.Data := Pointer(sessions); // Non-ref-counting ref to session list
     item.SubItems.Add(sessions[i].WindowStationName);
     item.SubItems.Add(GetStateString(sessions[I].ConnectionState));
   end;
